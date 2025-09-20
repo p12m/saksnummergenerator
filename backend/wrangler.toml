@@ -1,0 +1,16 @@
+name = "saksnummer"
+main = "src/index.ts"
+compatibility_date = "2025-09-20"
+
+[durable_objects]
+bindings = [
+    { name = "COUNTER", class_name = "SaksnummerCounter" }
+]
+
+# If this is your FIRST successful deploy, keep a single migration like this:
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SaksnummerCounter"]
+
+[vars]
+TZ = "Europe/Oslo"

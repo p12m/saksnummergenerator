@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Saksnummergenerator</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="card">
+    <h1>Saksnummergenerator</h1>
+
+    <div class="row">
+        <button id="generate">Generer nytt saksnummer</button>
+        <button id="peek" class="secondary">Se gjeldende status</button>
+    </div>
+
+    <div class="output" id="output">Trykk «Generer» for nytt nummer</div>
+
+    <div class="row">
+        <input id="apiUrl" placeholder="API-URL (lagres i nettleser)" />
+        <button id="saveUrl" class="secondary">Lagre API-URL</button>
+    </div>
+
+    <p class="muted">
+        Format: <code>YY/NNNNNN</code> &nbsp;•&nbsp; Oslo-tid &nbsp;•&nbsp; Delt globalt
+    </p>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
