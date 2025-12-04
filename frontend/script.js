@@ -5,20 +5,25 @@ const peekBtn = document.getElementById("peek");
 const out = document.getElementById("output");
 
 function fmtResult(r) {
-    return `${r.caseNumber}  (år=${r.year}, teller=${String(r.counter).padStart(6,"0")})`;
+    const counter = r.counter ?? r.next ?? r.lastIssued ?? 0;
+    return `${r.caseNumber}  (år=${r.year}, teller=${String(counter).padStart(6,"0")})`;
 }
 
 async function call(path, opts = {}) {
     const url = `${API_URL}${path}`;
+
     try {
         const res = await fetch(url, { ...opts, headers: { "Content-Type": "application/json" } });
+
         if (!res.ok) {
-            const t = await res.text();
-            throw new Error(`Feil ${res.status}: ${t}`);
+            const message = (await res.text()) || res.statusText;
+            throw new Error(`Feil ${res.status}${message ? `: ${message}` : ""}`);
         }
+
         return res.json();
     } catch (e) {
-        throw new Error(`Kunne ikke kontakte API-et (${url}). Sjekk URL-en og nettverkstilgang.`);
+        const details = e instanceof Error ? e.message : String(e);
+        throw new Error(`Kunne ikke kontakte API-et (${url}). ${details}. Sjekk URL-en og nettverkstilgang.`);
     }
 }
 
