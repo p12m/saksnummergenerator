@@ -18,10 +18,15 @@ function cors(res: Response, origin: string): Response {
     hdrs.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     hdrs.set("Access-Control-Allow-Headers", "Content-Type,Authorization");
     hdrs.set("Access-Control-Max-Age", "86400");
+    hdrs.set("Vary", "Origin");
     return new Response(res.body, { status: res.status, headers: hdrs });
 }
 
-const ALLOWED_ORIGIN = "https://p12m.github.io";
+function resolveAllowedOrigin(req: Request): string {
+    // Allow requests from any origin while still responding with the caller's value
+    // so the browser accepts the response for CORS requests made from the UI.
+    return req.headers.get("Origin") || "*";
+}
 
 type State = { year: number; counter: number }; // counter = last issued for that year
 
@@ -118,12 +123,13 @@ export class SaksnummerCounter {
 // SINGLE default export with CORS wrapper and DO routing
 export default {
     async fetch(req: Request, env: Env) {
+        const origin = resolveAllowedOrigin(req);
         if (req.method === "OPTIONS") {
-            return cors(new Response(null, { status: 204 }), ALLOWED_ORIGIN);
+            return cors(new Response(null, { status: 204 }), origin);
         }
         const id = env.COUNTER.idFromName("global");
         const stub = env.COUNTER.get(id);
         const res = await stub.fetch(req);
-        return cors(res, ALLOWED_ORIGIN);
+        return cors(res, origin);
     }
 };
