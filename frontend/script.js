@@ -1,38 +1,15 @@
-const DEFAULT_API_URL = "https://saksnummer.saksnummergenerator.workers.dev"; // e.g. "https://saksnummer.yourdomain.workers.dev";
+const API_URL = "https://saksnummer.saksnummergenerator.workers.dev"; // Fixed API endpoint
 
-const apiUrlInput = document.getElementById("apiUrl");
-const saveUrlBtn = document.getElementById("saveUrl");
 const generateBtn = document.getElementById("generate");
 const peekBtn = document.getElementById("peek");
 const out = document.getElementById("output");
-
-const LS_KEY = "saksnummer_api_url";
-
-function normalizeApiUrl(url) {
-    const trimmed = url.trim();
-    if (!trimmed) return "";
-    const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-    return withScheme.replace(/\/?$/, "");
-}
-
-function getApiUrl() {
-    const stored = localStorage.getItem(LS_KEY);
-    return stored ? normalizeApiUrl(stored) : DEFAULT_API_URL;
-}
-function setApiUrl(url) {
-    const normalized = normalizeApiUrl(url);
-    localStorage.setItem(LS_KEY, normalized);
-    return normalized;
-}
 
 function fmtResult(r) {
     return `${r.caseNumber}  (år=${r.year}, teller=${String(r.counter).padStart(6,"0")})`;
 }
 
 async function call(path, opts = {}) {
-    const base = getApiUrl();
-    if (!base) { out.textContent = "Sett API-URL først."; return null; }
-    const url = `${base}${path}`;
+    const url = `${API_URL}${path}`;
     try {
         const res = await fetch(url, { ...opts, headers: { "Content-Type": "application/json" } });
         if (!res.ok) {
@@ -65,13 +42,4 @@ peekBtn.addEventListener("click", async () => {
     } catch (e) {
         out.textContent = `Feil: ${e.message}`;
     }
-});
-
-saveUrlBtn.addEventListener("click", () => {
-    apiUrlInput.value = setApiUrl(apiUrlInput.value);
-    out.textContent = "API-URL lagret.";
-});
-
-window.addEventListener("DOMContentLoaded", () => {
-    apiUrlInput.value = getApiUrl();
 });
