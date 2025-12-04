@@ -33,10 +33,12 @@ type State = { year: number; counter: number }; // counter = last issued for tha
 export class SaksnummerCounter {
     state: DurableObjectState;
     storage: DurableObjectStorage;
+    cachedState: State | null;
 
     constructor(state: DurableObjectState, _env: Env) {
         this.state = state;
         this.storage = state.storage;
+        this.cachedState = null;
     }
 
     private pad(n: number): string {
@@ -53,17 +55,28 @@ export class SaksnummerCounter {
         return last + 1;
     }
 
-    async fetch(req: Request, env: Env): Promise<Response> {
-        const url = new URL(req.url);
-        const path = url.pathname;
-        const nowYear = currentYearFullOslo();
-
+    private async loadState(nowYear: number): Promise<State> {
+        if (this.cachedState) return this.cachedState;
         let state = (await this.storage.get<State>("state")) || { year: nowYear, counter: 0 };
         // Rollover on New Year (Oslo time)
         if (state.year !== nowYear) {
             state = { year: nowYear, counter: 0 };
             await this.storage.put("state", state);
         }
+        this.cachedState = state;
+        return state;
+    }
+
+    private async saveState(state: State): Promise<void> {
+        this.cachedState = state;
+        await this.storage.put("state", state);
+    }
+
+    async fetch(req: Request, env: Env): Promise<Response> {
+        const url = new URL(req.url);
+        const path = url.pathname;
+        const nowYear = currentYearFullOslo();
+        const state = await this.loadState(nowYear);
 
         if (req.method === "GET" && (path === "/" || path === "")) {
             const year2 = year2Digits(state.year);
@@ -100,14 +113,13 @@ export class SaksnummerCounter {
         if (req.method === "POST" && path === "/api/next") {
             // compute next, persist as last
             const next = this.nextCounterFor(state.year, state.counter);
-            state.counter = next;
-            await this.storage.put("state", state);
+            await this.saveState({ year: state.year, counter: next });
 
             const year2 = year2Digits(state.year);
             return Response.json({
                 year: year2,
-                counter: state.counter,
-                caseNumber: this.formatCaseNumber(year2, state.counter)
+                counter: next,
+                caseNumber: this.formatCaseNumber(year2, next)
             });
         }
 
@@ -121,7 +133,7 @@ export class SaksnummerCounter {
             const counter = typeof body.counter === "number" ? body.counter : 0;
 
             const newState: State = { year, counter };
-            await this.storage.put("state", newState);
+            await this.saveState(newState);
 
             const year2 = year2Digits(year);
             return Response.json({
