@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "https://saksnummer.saksnummergenerator.workers.dev"; // e.g. "https://saksnummer.yourdomain.workers.dev"
+const DEFAULT_API_URL = "https://saksnummer.saksnummergenerator.workers.dev"; // e.g. "https://saksnummer.yourdomain.workers.dev";
 
 const apiUrlInput = document.getElementById("apiUrl");
 const saveUrlBtn = document.getElementById("saveUrl");
@@ -8,11 +8,21 @@ const out = document.getElementById("output");
 
 const LS_KEY = "saksnummer_api_url";
 
+function normalizeApiUrl(url) {
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    return withScheme.replace(/\/?$/, "");
+}
+
 function getApiUrl() {
-    return localStorage.getItem(LS_KEY) || DEFAULT_API_URL;
+    const stored = localStorage.getItem(LS_KEY);
+    return stored ? normalizeApiUrl(stored) : DEFAULT_API_URL;
 }
 function setApiUrl(url) {
-    localStorage.setItem(LS_KEY, url.trim());
+    const normalized = normalizeApiUrl(url);
+    localStorage.setItem(LS_KEY, normalized);
+    return normalized;
 }
 
 function fmtResult(r) {
@@ -22,12 +32,17 @@ function fmtResult(r) {
 async function call(path, opts = {}) {
     const base = getApiUrl();
     if (!base) { out.textContent = "Sett API-URL først."; return null; }
-    const res = await fetch(`${base}${path}`, { ...opts, headers: { "Content-Type": "application/json" }});
-    if (!res.ok) {
-        const t = await res.text();
-        throw new Error(`Feil ${res.status}: ${t}`);
+    const url = `${base}${path}`;
+    try {
+        const res = await fetch(url, { ...opts, headers: { "Content-Type": "application/json" } });
+        if (!res.ok) {
+            const t = await res.text();
+            throw new Error(`Feil ${res.status}: ${t}`);
+        }
+        return res.json();
+    } catch (e) {
+        throw new Error(`Kunne ikke kontakte API-et (${url}). Sjekk URL-en og nettverkstilgang.`);
     }
-    return res.json();
 }
 
 generateBtn.addEventListener("click", async () => {
@@ -53,7 +68,7 @@ peekBtn.addEventListener("click", async () => {
 });
 
 saveUrlBtn.addEventListener("click", () => {
-    setApiUrl(apiUrlInput.value);
+    apiUrlInput.value = setApiUrl(apiUrlInput.value);
     out.textContent = "API-URL lagret.";
 });
 
