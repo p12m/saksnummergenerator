@@ -65,6 +65,26 @@ export class SaksnummerCounter {
             await this.storage.put("state", state);
         }
 
+        if (req.method === "GET" && (path === "/" || path === "")) {
+            const year2 = year2Digits(state.year);
+            const next = this.nextCounterFor(state.year, state.counter);
+            return Response.json({
+                status: "ok",
+                message: "Saksnummergenerator API. Bruk /api/peek for status eller /api/next for nytt saksnummer.",
+                endpoints: {
+                    peek: "GET /api/peek",
+                    next: "POST /api/next",
+                    set: "POST /api/set"
+                },
+                current: {
+                    year: year2,
+                    lastIssued: state.counter === 0 ? null : state.counter,
+                    next,
+                    caseNumber: this.formatCaseNumber(year2, next)
+                }
+            });
+        }
+
         if (req.method === "GET" && path === "/api/peek") {
             const year2 = year2Digits(state.year);
             const next = this.nextCounterFor(state.year, state.counter);
